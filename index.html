@@ -1,25 +1,19 @@
 <!doctype html>
-<html>
+<html lang="id">
   <head>
-    <base target="_top" />
-
     <meta charset="UTF-8" />
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <title>Document Manager</title>
 
-    <?!= include('style'); ?>
+    <link rel="stylesheet" href="style.css" />
   </head>
 
   <body>
-    <!-- ================= HEADER ================= -->
-
     <header class="topbar">
       <div class="header-inner">
         <div>
           <h1>Document Manager</h1>
-
           <p>Dashboard Dokumen</p>
         </div>
 
@@ -29,128 +23,88 @@
       </div>
     </header>
 
-    <!-- ================= MAIN ================= -->
-
     <main class="container">
-      <!-- TOOLBAR -->
-
-      <section class="toolbar">
+      <div class="toolbar">
         <div class="search-box">
           <input
             type="text"
             id="searchInput"
-            placeholder="Cari nama dokumen..."
+            placeholder="Cari dokumen..."
             oninput="renderDocuments()"
           />
         </div>
 
         <div class="total-box">
-          Total Dokumen:
-          <strong id="totalDocuments"> 0 </strong>
+          Total:
+          <strong id="totalDocuments">0</strong>
         </div>
-      </section>
-
-      <!-- DASHBOARD -->
+      </div>
 
       <section id="documentGrid" class="document-grid"></section>
 
-      <!-- EMPTY -->
-
-      <div id="emptyState" class="empty-state" style="display: none">
+      <div id="emptyState" class="empty-state">
         <div class="empty-icon">📄</div>
 
         <h2>Belum ada dokumen</h2>
 
-        <p>Tambahkan dokumen pertama Anda.</p>
+        <p>Silakan tambahkan dokumen.</p>
       </div>
     </main>
 
-    <!-- ================= MODAL ================= -->
+    <!-- MODAL -->
 
     <div id="modal" class="modal">
       <div class="modal-box">
         <div class="modal-header">
           <div>
             <h2 id="modalTitle">Tambah Dokumen</h2>
-
-            <p>Lengkapi informasi dokumen</p>
+            <p>Lengkapi data dokumen</p>
           </div>
 
           <button class="close-btn" onclick="closeModal()">×</button>
         </div>
 
-        <!-- FORM -->
-
-        <form id="documentForm" onsubmit="submitForm(event)">
+        <form id="documentForm">
           <input type="hidden" id="documentId" />
 
-          <!-- NAMA -->
-
           <div class="form-group">
-            <label>
-              Nama Dokumen
-              <span>*</span>
-            </label>
+            <label> Nama Dokumen <span>*</span> </label>
 
             <input
               type="text"
               id="documentName"
               required
-              placeholder="Contoh: Dokumen Penawaran 2026"
+              placeholder="Nama dokumen"
             />
-
-            <small> Nama harus unik. </small>
           </div>
 
-          <!-- DESKRIPSI -->
-
           <div class="form-group">
-            <label> Deskripsi </label>
+            <label>Deskripsi</label>
 
             <textarea
               id="description"
               rows="4"
-              placeholder="Masukkan deskripsi dokumen..."
+              placeholder="Deskripsi dokumen"
             ></textarea>
           </div>
 
-          <!-- PDF -->
-
           <div class="form-group">
-            <label>
-              File PDF
-              <span id="pdfRequired">*</span>
-            </label>
+            <label>File PDF</label>
 
             <input type="file" id="pdfFile" accept="application/pdf" />
-
-            <small> Maksimal 20 MB. </small>
           </div>
 
-          <!-- GAMBAR UTAMA -->
-
           <div class="form-group">
-            <label>
-              Gambar Utama
-              <span id="mainImageRequired">*</span>
-            </label>
+            <label>Gambar Utama</label>
 
             <input type="file" id="mainImageFile" accept="image/*" />
-
-            <small> Digunakan sebagai gambar utama pada dashboard. </small>
           </div>
-
-          <!-- GAMBAR TAMBAHAN -->
 
           <div class="form-group">
-            <label> Gambar Tambahan </label>
+            <label>Gambar Tambahan</label>
 
             <input type="file" id="extraImageFiles" accept="image/*" multiple />
-
-            <small> Bisa memilih beberapa gambar sekaligus. </small>
           </div>
-
-          <!-- REPLACE EXTRA -->
 
           <div
             id="replaceExtraContainer"
@@ -164,22 +118,18 @@
             </label>
           </div>
 
-          <!-- FORM BUTTON -->
-
           <div class="form-actions">
             <button type="button" class="btn ghost" onclick="closeModal()">
               Batal
             </button>
 
-            <button type="submit" class="btn primary" id="submitButton">
-              Simpan Dokumen
-            </button>
+            <button type="submit" class="btn primary">Simpan</button>
           </div>
         </form>
       </div>
     </div>
 
-    <!-- ================= LIGHTBOX ================= -->
+    <!-- LIGHTBOX -->
 
     <div id="lightbox" class="lightbox" onclick="closeLightbox()">
       <button class="lightbox-close" onclick="closeLightbox()">×</button>
@@ -192,11 +142,11 @@
       />
     </div>
 
-    <!-- ================= TOAST ================= -->
+    <!-- TOAST -->
 
     <div id="toast" class="toast"></div>
 
-    <!-- ================= LOADING ================= -->
+    <!-- LOADING -->
 
     <div id="loading" class="loading-overlay">
       <div class="loading-box">
@@ -206,693 +156,6 @@
       </div>
     </div>
 
-    <script>
-      // ==========================================
-      // GLOBAL DATA
-      // ==========================================
-
-      let documents = [];
-
-      let editMode = false;
-
-      // ==========================================
-      // LOAD DATA
-      // ==========================================
-
-      document.addEventListener("DOMContentLoaded", function () {
-        loadDocuments();
-      });
-
-      function loadDocuments() {
-        showLoading("Memuat data dokumen...");
-
-        google.script.run
-
-          .withSuccessHandler(function (data) {
-            documents = Array.isArray(data) ? data : [];
-
-            renderDocuments();
-
-            hideLoading();
-          })
-
-          .withFailureHandler(function (error) {
-            hideLoading();
-
-            showToast(getErrorMessage(error), "error");
-          })
-
-          .getDocuments();
-      }
-
-      // ==========================================
-      // RENDER
-      // ==========================================
-
-      function renderDocuments() {
-        const grid = document.getElementById("documentGrid");
-
-        const empty = document.getElementById("emptyState");
-
-        const search = document
-          .getElementById("searchInput")
-          .value.trim()
-          .toLowerCase();
-
-        const filtered = documents.filter(function (doc) {
-          return doc.name.toLowerCase().includes(search);
-        });
-
-        document.getElementById("totalDocuments").textContent =
-          documents.length;
-
-        grid.innerHTML = "";
-
-        if (filtered.length === 0) {
-          grid.style.display = "none";
-
-          empty.style.display = "block";
-
-          return;
-        }
-
-        grid.style.display = "grid";
-
-        empty.style.display = "none";
-
-        filtered.forEach(function (doc) {
-          grid.appendChild(createCard(doc));
-        });
-      }
-
-      // ==========================================
-      // CREATE CARD
-      // ==========================================
-
-      function createCard(doc) {
-        const card = document.createElement("article");
-
-        card.className = "document-card";
-
-        // IMAGE
-
-        const image = document.createElement("img");
-
-        image.className = "card-image";
-
-        image.src = convertDriveImageUrl(doc.mainImageUrl);
-
-        image.alt = doc.name;
-
-        image.loading = "lazy";
-
-        image.onclick = function () {
-          openLightbox(convertDriveImageUrl(doc.mainImageUrl));
-        };
-
-        image.onerror = function () {
-          this.onerror = null;
-
-          this.src = "https://placehold.co/800x500?text=Gambar+Tidak+Tersedia";
-        };
-
-        card.appendChild(image);
-
-        // BODY
-
-        const body = document.createElement("div");
-
-        body.className = "card-body";
-
-        // NAME
-
-        const name = document.createElement("h3");
-
-        name.className = "card-name";
-
-        name.textContent = doc.name;
-
-        body.appendChild(name);
-
-        // DESCRIPTION
-
-        const description = document.createElement("p");
-
-        description.className = "card-description";
-
-        description.textContent = doc.description || "Tidak ada deskripsi.";
-
-        body.appendChild(description);
-
-        // EXTRA GALLERY
-
-        if (doc.extraImages && doc.extraImages.length) {
-          const gallery = document.createElement("div");
-
-          gallery.className = "gallery";
-
-          doc.extraImages.forEach(function (url) {
-            const img = document.createElement("img");
-
-            img.src = convertDriveImageUrl(url);
-
-            img.alt = doc.name;
-
-            img.loading = "lazy";
-
-            img.onclick = function () {
-              openLightbox(convertDriveImageUrl(url));
-            };
-
-            img.onerror = function () {
-              this.style.display = "none";
-            };
-
-            gallery.appendChild(img);
-          });
-
-          body.appendChild(gallery);
-        }
-
-        // ACTIONS
-
-        const actions = document.createElement("div");
-
-        actions.className = "card-actions";
-
-        // OPEN PDF
-
-        const pdfButton = document.createElement("button");
-
-        pdfButton.className = "btn pdf";
-
-        pdfButton.textContent = "📄 Buka PDF";
-
-        pdfButton.onclick = function () {
-          openPdf(doc.pdfUrl);
-        };
-
-        actions.appendChild(pdfButton);
-
-        // DOWNLOAD PDF
-
-        const downloadButton = document.createElement("button");
-
-        downloadButton.className = "btn download";
-
-        downloadButton.textContent = "⬇ Download PDF";
-
-        downloadButton.onclick = function () {
-          downloadPDF(doc.pdfUrl, doc.name);
-        };
-
-        actions.appendChild(downloadButton);
-
-        // EDIT
-
-        const editButton = document.createElement("button");
-
-        editButton.className = "btn edit";
-
-        editButton.textContent = "✏ Edit";
-
-        editButton.onclick = function () {
-          openEditModal(doc);
-        };
-
-        actions.appendChild(editButton);
-
-        // DELETE
-
-        const deleteButton = document.createElement("button");
-
-        deleteButton.className = "btn danger";
-
-        deleteButton.textContent = "🗑 Hapus";
-
-        deleteButton.onclick = function () {
-          deleteDocumentConfirm(doc);
-        };
-
-        actions.appendChild(deleteButton);
-
-        body.appendChild(actions);
-
-        card.appendChild(body);
-
-        return card;
-      }
-
-      // ==========================================
-      // OPEN PDF
-      // ==========================================
-
-      function openPdf(url) {
-        if (!url) {
-          showToast("File PDF tidak tersedia.", "error");
-
-          return;
-        }
-
-        window.open(url, "_blank");
-      }
-
-      // ==========================================
-      // DOWNLOAD PDF
-      // ==========================================
-
-      function downloadPDF(url, name) {
-        if (!url) {
-          showToast("File PDF tidak tersedia.", "error");
-
-          return;
-        }
-
-        const match = String(url).match(/\/d\/([^/]+)/);
-
-        if (!match) {
-          window.open(url, "_blank");
-
-          return;
-        }
-
-        const fileId = match[1];
-
-        /*
-         * URL DOWNLOAD GOOGLE DRIVE
-         */
-
-        const downloadUrl =
-          "https://drive.google.com/uc?export=download&id=" +
-          encodeURIComponent(fileId);
-
-        /*
-         * Buat link sementara
-         */
-
-        const link = document.createElement("a");
-
-        link.href = downloadUrl;
-
-        link.download = sanitizeDownloadName(name) + ".pdf";
-
-        link.target = "_blank";
-
-        link.rel = "noopener";
-
-        document.body.appendChild(link);
-
-        link.click();
-
-        document.body.removeChild(link);
-
-        showToast("Download PDF dimulai.", "success");
-      }
-
-      // ==========================================
-      // SANITIZE DOWNLOAD NAME
-      // ==========================================
-
-      function sanitizeDownloadName(name) {
-        return String(name || "dokumen")
-          .replace(/[\\/:*?"<>|]/g, "_")
-          .trim();
-      }
-
-      // ==========================================
-      // CONVERT DRIVE IMAGE
-      // ==========================================
-
-      function convertDriveImageUrl(url) {
-        if (!url) {
-          return "";
-        }
-
-        const match = String(url).match(/\/d\/([^/]+)/);
-
-        if (match) {
-          return (
-            "https://drive.google.com/thumbnail?id=" + match[1] + "&sz=w1200"
-          );
-        }
-
-        return url;
-      }
-
-      // ==========================================
-      // CREATE MODAL
-      // ==========================================
-
-      function openCreateModal() {
-        editMode = false;
-
-        document.getElementById("modalTitle").textContent = "Tambah Dokumen";
-
-        document.getElementById("documentForm").reset();
-
-        document.getElementById("documentId").value = "";
-
-        document.getElementById("pdfRequired").style.display = "inline";
-
-        document.getElementById("mainImageRequired").style.display = "inline";
-
-        document.getElementById("replaceExtraContainer").style.display = "none";
-
-        document.getElementById("submitButton").textContent = "Simpan Dokumen";
-
-        showModal();
-      }
-
-      // ==========================================
-      // EDIT MODAL
-      // ==========================================
-
-      function openEditModal(doc) {
-        editMode = true;
-
-        document.getElementById("modalTitle").textContent = "Edit Dokumen";
-
-        document.getElementById("documentId").value = doc.id;
-
-        document.getElementById("documentName").value = doc.name;
-
-        document.getElementById("description").value = doc.description || "";
-
-        document.getElementById("pdfRequired").style.display = "none";
-
-        document.getElementById("mainImageRequired").style.display = "none";
-
-        document.getElementById("replaceExtraContainer").style.display =
-          doc.extraImages && doc.extraImages.length ? "block" : "none";
-
-        document.getElementById("replaceExtraImages").checked = false;
-
-        document.getElementById("submitButton").textContent =
-          "Simpan Perubahan";
-
-        showModal();
-      }
-
-      // ==========================================
-      // SHOW MODAL
-      // ==========================================
-
-      function showModal() {
-        document.getElementById("modal").classList.add("show");
-      }
-
-      // ==========================================
-      // CLOSE MODAL
-      // ==========================================
-
-      function closeModal() {
-        document.getElementById("modal").classList.remove("show");
-      }
-
-      // ==========================================
-      // SUBMIT FORM
-      // ==========================================
-
-      async function submitForm(event) {
-        event.preventDefault();
-
-        try {
-          const name = document.getElementById("documentName").value.trim();
-
-          const description = document.getElementById("description").value;
-
-          if (!name) {
-            showToast("Nama dokumen wajib diisi.", "error");
-
-            return;
-          }
-
-          showLoading(
-            editMode ? "Memperbarui dokumen..." : "Mengupload dokumen...",
-          );
-
-          const pdfInput = document.getElementById("pdfFile");
-
-          const mainImageInput = document.getElementById("mainImageFile");
-
-          const extraInput = document.getElementById("extraImageFiles");
-
-          const pdf = pdfInput.files[0]
-            ? await fileToObject(pdfInput.files[0])
-            : null;
-
-          const mainImage = mainImageInput.files[0]
-            ? await fileToObject(mainImageInput.files[0])
-            : null;
-
-          const extraImages = [];
-
-          for (let i = 0; i < extraInput.files.length; i++) {
-            extraImages.push(await fileToObject(extraInput.files[i]));
-          }
-
-          const payload = {
-            id: document.getElementById("documentId").value,
-
-            name: name,
-
-            description: description,
-
-            pdf: pdf,
-
-            mainImage: mainImage,
-
-            extraImages: extraImages,
-
-            replaceExtraImages:
-              document.getElementById("replaceExtraImages").checked,
-          };
-
-          if (editMode) {
-            google.script.run
-
-              .withSuccessHandler(handleSaveSuccess)
-
-              .withFailureHandler(handleSaveError)
-
-              .updateDocument(payload);
-          } else {
-            google.script.run
-
-              .withSuccessHandler(handleSaveSuccess)
-
-              .withFailureHandler(handleSaveError)
-
-              .createDocument(payload);
-          }
-        } catch (error) {
-          hideLoading();
-
-          showToast(error.message || "Terjadi kesalahan.", "error");
-        }
-      }
-
-      // ==========================================
-      // SAVE SUCCESS
-      // ==========================================
-
-      function handleSaveSuccess(result) {
-        hideLoading();
-
-        if (!result || !result.ok) {
-          showToast(
-            result && result.message
-              ? result.message
-              : "Gagal menyimpan dokumen.",
-            "error",
-          );
-
-          return;
-        }
-
-        closeModal();
-
-        showToast(result.message, "success");
-
-        loadDocuments();
-      }
-
-      // ==========================================
-      // SAVE ERROR
-      // ==========================================
-
-      function handleSaveError(error) {
-        hideLoading();
-
-        showToast(getErrorMessage(error), "error");
-      }
-
-      // ==========================================
-      // DELETE
-      // ==========================================
-
-      function deleteDocumentConfirm(doc) {
-        const confirmed = confirm(
-          'Hapus dokumen "' +
-            doc.name +
-            '"?\n\nFolder Google Drive juga akan dipindahkan ke Trash.',
-        );
-
-        if (!confirmed) {
-          return;
-        }
-
-        showLoading("Menghapus dokumen...");
-
-        google.script.run
-
-          .withSuccessHandler(function (result) {
-            hideLoading();
-
-            if (!result.ok) {
-              showToast(result.message, "error");
-
-              return;
-            }
-
-            showToast(result.message, "success");
-
-            loadDocuments();
-          })
-
-          .withFailureHandler(function (error) {
-            hideLoading();
-
-            showToast(getErrorMessage(error), "error");
-          })
-
-          .deleteDocument(doc.id);
-      }
-
-      // ==========================================
-      // FILE TO OBJECT
-      // ==========================================
-
-      function fileToObject(file) {
-        return new Promise(function (resolve, reject) {
-          const reader = new FileReader();
-
-          reader.onload = function (event) {
-            const result = event.target.result;
-
-            const base64 = result.split(",")[1];
-
-            resolve({
-              name: file.name,
-
-              mimeType: file.type,
-
-              size: file.size,
-
-              data: base64,
-            });
-          };
-
-          reader.onerror = function () {
-            reject(new Error("Gagal membaca file " + file.name));
-          };
-
-          reader.readAsDataURL(file);
-        });
-      }
-
-      // ==========================================
-      // LIGHTBOX
-      // ==========================================
-
-      function openLightbox(url) {
-        if (!url) {
-          return;
-        }
-
-        document.getElementById("lightboxImage").src = url;
-
-        document.getElementById("lightbox").classList.add("show");
-      }
-
-      function closeLightbox() {
-        document.getElementById("lightbox").classList.remove("show");
-      }
-
-      // ==========================================
-      // TOAST
-      // ==========================================
-
-      let toastTimer;
-
-      function showToast(message, type) {
-        const toast = document.getElementById("toast");
-
-        toast.textContent = message;
-
-        toast.className = "toast show " + (type || "success");
-
-        clearTimeout(toastTimer);
-
-        toastTimer = setTimeout(function () {
-          toast.classList.remove("show");
-        }, 3500);
-      }
-
-      // ==========================================
-      // LOADING
-      // ==========================================
-
-      function showLoading(text) {
-        document.getElementById("loadingText").textContent =
-          text || "Memproses...";
-
-        document.getElementById("loading").classList.add("show");
-      }
-
-      function hideLoading() {
-        document.getElementById("loading").classList.remove("show");
-      }
-
-      // ==========================================
-      // ERROR
-      // ==========================================
-
-      function getErrorMessage(error) {
-        if (!error) {
-          return "Terjadi kesalahan.";
-        }
-
-        if (typeof error === "string") {
-          return error;
-        }
-
-        return error.message || "Terjadi kesalahan.";
-      }
-
-      // ==========================================
-      // ESC KEY
-      // ==========================================
-
-      document.addEventListener("keydown", function (event) {
-        if (event.key === "Escape") {
-          closeModal();
-
-          closeLightbox();
-        }
-      });
-
-      // ==========================================
-      // CLOSE MODAL OUTSIDE
-      // ==========================================
-
-      document
-        .getElementById("modal")
-        .addEventListener("click", function (event) {
-          if (event.target === this) {
-            closeModal();
-          }
-        });
-    </script>
+    <script src="script.js"></script>
   </body>
 </html>
