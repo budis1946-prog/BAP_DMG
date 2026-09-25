@@ -1,227 +1,1892 @@
-<!doctype html>
-<html lang="id">
-  <head>
-    <meta charset="UTF-8" />
+<!DOCTYPE html>
+<html>
+<head>
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <base target="_top">
 
-    <title>Document Manager</title>
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
 
-    <link rel="stylesheet" href="style.css" />
-  </head>
+  <title>Document Manager</title>
 
-  <body>
-    <!-- =========================
-       HEADER
-  ========================== -->
+  <?!= include('style'); ?>
 
-    <header class="topbar">
-      <div class="header-inner">
-        <div class="brand">
-          <h1>Document Manager</h1>
+</head>
 
-          <p>Kelola dokumen PDF dan gambar</p>
-        </div>
+<body>
 
-        <button type="button" class="btn primary" onclick="openCreateModal()">
-          + Tambah Dokumen
-        </button>
-      </div>
-    </header>
+  <!-- HEADER -->
+  <header class="header">
 
-    <!-- =========================
-       MAIN
-  ========================== -->
+    <div class="header-inner">
 
-    <main class="container">
-      <!-- TOOLBAR -->
-
-      <div class="toolbar">
-        <div class="search-box">
-          <input
-            type="text"
-            id="searchInput"
-            placeholder="Cari nama atau deskripsi dokumen..."
-          />
-        </div>
-
-        <div class="total-box">
-          Total Dokumen:
-
-          <strong id="totalDocuments"> 0 </strong>
-        </div>
+      <div>
+        <h1>Document Manager</h1>
+        <p>Manajemen Dokumen & Gambar</p>
       </div>
 
-      <!-- DOCUMENT GRID -->
-
-      <section id="documentGrid" class="document-grid"></section>
-
-      <!-- EMPTY -->
-
-      <div id="emptyState" class="empty-state" style="display: none">
-        <div class="empty-icon">📄</div>
-
-        <h2>Belum ada dokumen</h2>
-
-        <p>Klik tombol "Tambah Dokumen" untuk membuat dokumen baru.</p>
-      </div>
-    </main>
-
-    <!-- =========================
-       MODAL
-  ========================== -->
-
-    <div id="modal" class="modal">
-      <div class="modal-box">
-        <!-- MODAL HEADER -->
-
-        <div class="modal-header">
-          <div>
-            <h2 id="modalTitle">Tambah Dokumen</h2>
-
-            <p>Lengkapi data dokumen</p>
-          </div>
-
-          <button type="button" class="close-btn" onclick="closeModal()">
-            ×
-          </button>
-        </div>
-
-        <!-- FORM -->
-
-        <form id="documentForm">
-          <input type="hidden" id="documentId" />
-
-          <!-- NAMA -->
-
-          <div class="form-group">
-            <label for="documentName">
-              Nama Dokumen
-
-              <span>*</span>
-            </label>
-
-            <input
-              type="text"
-              id="documentName"
-              placeholder="Contoh: Katalog Produk September"
-              required
-            />
-
-            <small> Nama harus unik. </small>
-          </div>
-
-          <!-- DESKRIPSI -->
-
-          <div class="form-group">
-            <label for="description"> Deskripsi </label>
-
-            <textarea
-              id="description"
-              rows="4"
-              placeholder="Masukkan deskripsi dokumen..."
-            ></textarea>
-          </div>
-
-          <!-- PDF -->
-
-          <div class="form-group">
-            <label for="pdfFile">
-              File PDF
-
-              <span id="pdfRequired" class="required-mark"> * </span>
-            </label>
-
-            <input type="file" id="pdfFile" accept="application/pdf,.pdf" />
-
-            <small> Maksimal 20 MB. </small>
-          </div>
-
-          <!-- GAMBAR UTAMA -->
-
-          <div class="form-group">
-            <label for="mainImageFile">
-              Gambar Utama
-
-              <span id="mainImageRequired" class="required-mark"> * </span>
-            </label>
-
-            <input type="file" id="mainImageFile" accept="image/*" />
-
-            <small> Gambar yang tampil sebagai gambar utama. </small>
-          </div>
-
-          <!-- GAMBAR TAMBAHAN -->
-
-          <div class="form-group">
-            <label for="extraImageFiles"> Gambar Tambahan </label>
-
-            <input type="file" id="extraImageFiles" accept="image/*" multiple />
-
-            <small> Anda dapat memilih beberapa gambar sekaligus. </small>
-          </div>
-
-          <!-- REPLACE GALLERY -->
-
-          <div
-            id="replaceExtraContainer"
-            class="checkbox-group"
-            style="display: none"
-          >
-            <label class="checkbox-label">
-              <input type="checkbox" id="replaceExtraImages" />
-
-              <span> Ganti seluruh gambar tambahan </span>
-            </label>
-          </div>
-
-          <!-- FORM ACTION -->
-
-          <div class="form-actions">
-            <button type="button" class="btn ghost" onclick="closeModal()">
-              Batal
-            </button>
-
-            <button type="submit" class="btn primary" id="submitButton">
-              Simpan
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- =========================
-       LIGHTBOX
-  ========================== -->
-
-    <div id="lightbox" class="lightbox">
-      <button type="button" class="lightbox-close" onclick="closeLightbox()">
-        ×
+      <button
+        class="btn primary"
+        onclick="openCreateModal()"
+      >
+        + Tambah Dokumen
       </button>
 
-      <img id="lightboxImage" src="" alt="Preview" />
     </div>
 
-    <!-- =========================
-       TOAST
-  ========================== -->
+  </header>
 
-    <div id="toast" class="toast"></div>
 
-    <!-- =========================
-       LOADING
-  ========================== -->
+  <!-- MAIN -->
+  <main class="container">
 
-    <div id="loading" class="loading-overlay">
-      <div class="loading-box">
-        <div class="spinner"></div>
+    <!-- TOOLBAR -->
+    <section class="toolbar">
 
-        <p id="loadingText">Memproses...</p>
+      <div class="search-box">
+
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="Cari nama dokumen..."
+          oninput="renderDocuments()"
+        >
+
       </div>
+
+      <div class="total-box">
+
+        <strong id="totalDocuments">
+          0
+        </strong>
+
+        <span>
+          Dokumen
+        </span>
+
+      </div>
+
+    </section>
+
+
+    <!-- LOADING -->
+    <div
+      id="initialLoading"
+      class="initial-loading"
+    >
+      Memuat dokumen...
     </div>
 
-    <!-- JAVASCRIPT -->
 
-    <script src="script.js"></script>
-  </body>
+    <!-- DOCUMENT GRID -->
+    <section
+      id="documentGrid"
+      class="document-grid"
+    ></section>
+
+
+    <!-- EMPTY -->
+    <section
+      id="emptyState"
+      class="empty-state hidden"
+    >
+
+      <div class="empty-icon">
+        📁
+      </div>
+
+      <h2>
+        Belum ada dokumen
+      </h2>
+
+      <p>
+        Tambahkan dokumen pertama Anda.
+      </p>
+
+      <button
+        class="btn primary"
+        onclick="openCreateModal()"
+      >
+        + Tambah Dokumen
+      </button>
+
+    </section>
+
+  </main>
+
+
+  <!-- MODAL FORM -->
+  <div
+    id="documentModal"
+    class="modal"
+  >
+
+    <div class="modal-box">
+
+      <div class="modal-header">
+
+        <h2 id="modalTitle">
+          Tambah Dokumen
+        </h2>
+
+        <button
+          class="close-btn"
+          onclick="closeModal()"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <form
+        id="documentForm"
+        onsubmit="submitForm(event)"
+      >
+
+        <div class="form-group">
+
+          <label>
+            Nama Dokumen
+            <span>*</span>
+          </label>
+
+          <input
+            type="text"
+            id="nama"
+            required
+            maxlength="200"
+            placeholder="Contoh: Katalog Produk September"
+          >
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label>
+            Deskripsi
+          </label>
+
+          <textarea
+            id="deskripsi"
+            rows="4"
+            placeholder="Deskripsi dokumen..."
+          ></textarea>
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label>
+            File PDF
+          </label>
+
+          <input
+            type="file"
+            id="pdfFile"
+            accept="application/pdf,.pdf"
+          >
+
+          <small>
+            Maksimal 20 MB
+          </small>
+
+          <div
+            id="currentPdf"
+            class="current-file"
+          ></div>
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label>
+            Gambar Utama
+          </label>
+
+          <input
+            type="file"
+            id="mainImage"
+            accept="image/*"
+          >
+
+          <small>
+            Maksimal 20 MB
+          </small>
+
+          <div
+            id="currentMainImage"
+            class="current-preview"
+          ></div>
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label>
+            Gambar Tambahan
+          </label>
+
+          <input
+            type="file"
+            id="extraImages"
+            accept="image/*"
+            multiple
+          >
+
+          <small>
+            Pilih beberapa gambar sekaligus.
+          </small>
+
+        </div>
+
+
+        <div
+          id="replaceGalleryBox"
+          class="checkbox-group hidden"
+        >
+
+          <label>
+
+            <input
+              type="checkbox"
+              id="replaceExtraImages"
+            >
+
+            <span>
+              Ganti seluruh gambar tambahan
+            </span>
+
+          </label>
+
+        </div>
+
+
+        <div class="form-actions">
+
+          <button
+            type="button"
+            class="btn ghost"
+            onclick="closeModal()"
+          >
+            Batal
+          </button>
+
+          <button
+            type="submit"
+            class="btn primary"
+            id="saveButton"
+          >
+            Simpan
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+
+  </div>
+
+
+  <!-- LIGHTBOX -->
+  <div
+    id="lightbox"
+    class="lightbox"
+    onclick="closeLightbox()"
+  >
+
+    <button
+      class="lightbox-close"
+      onclick="closeLightbox()"
+    >
+      ×
+    </button>
+
+    <img
+      id="lightboxImage"
+      src=""
+      alt="Preview"
+      onclick="event.stopPropagation()"
+    >
+
+  </div>
+
+
+  <!-- TOAST -->
+  <div
+    id="toast"
+    class="toast"
+  ></div>
+
+
+  <!-- LOADING OVERLAY -->
+  <div
+    id="loadingOverlay"
+    class="loading-overlay"
+  >
+
+    <div class="spinner"></div>
+
+    <div id="loadingText">
+      Memproses...
+    </div>
+
+  </div>
+
+
+<script>
+
+/*************************************************
+ * GLOBAL
+ *************************************************/
+
+let documents = [];
+
+let editMode = false;
+
+let editId = null;
+
+let toastTimer = null;
+
+
+/*************************************************
+ * INITIALIZE
+ *************************************************/
+
+document.addEventListener(
+  'DOMContentLoaded',
+  function() {
+
+    loadDocuments();
+
+  }
+);
+
+
+/*************************************************
+ * LOAD DOCUMENTS
+ *************************************************/
+
+function loadDocuments() {
+
+  showLoading(
+    'Memuat dokumen...'
+  );
+
+  google.script.run
+    .withSuccessHandler(
+      function(result) {
+
+        hideLoading();
+
+        documents =
+          Array.isArray(result)
+            ? result
+            : [];
+
+        document
+          .getElementById(
+            'initialLoading'
+          )
+          .classList.add(
+            'hidden'
+          );
+
+        renderDocuments();
+
+      }
+    )
+    .withFailureHandler(
+      function(error) {
+
+        hideLoading();
+
+        document
+          .getElementById(
+            'initialLoading'
+          )
+          .classList.add(
+            'hidden'
+          );
+
+        console.error(error);
+
+        showToast(
+          getErrorMessage(error),
+          true
+        );
+
+      }
+    )
+    .getDocuments();
+
+}
+
+
+/*************************************************
+ * RENDER DOCUMENTS
+ *************************************************/
+
+function renderDocuments() {
+
+  const grid =
+    document.getElementById(
+      'documentGrid'
+    );
+
+  const empty =
+    document.getElementById(
+      'emptyState'
+    );
+
+  const total =
+    document.getElementById(
+      'totalDocuments'
+    );
+
+  const search =
+    document
+      .getElementById(
+        'searchInput'
+      )
+      .value
+      .trim()
+      .toLowerCase();
+
+
+  const filtered =
+    documents.filter(
+      function(doc) {
+
+        return (
+          doc.nama
+            .toLowerCase()
+            .includes(search) ||
+
+          doc.deskripsi
+            .toLowerCase()
+            .includes(search)
+        );
+
+      }
+    );
+
+
+  total.textContent =
+    filtered.length;
+
+
+  grid.innerHTML = '';
+
+
+  if (filtered.length === 0) {
+
+    grid.classList.add(
+      'hidden'
+    );
+
+    empty.classList.remove(
+      'hidden'
+    );
+
+    return;
+
+  }
+
+
+  grid.classList.remove(
+    'hidden'
+  );
+
+  empty.classList.add(
+    'hidden'
+  );
+
+
+  filtered.forEach(
+    function(doc) {
+
+      grid.appendChild(
+        createDocumentCard(doc)
+      );
+
+    }
+  );
+
+}
+
+
+/*************************************************
+ * CREATE CARD
+ *************************************************/
+
+function createDocumentCard(
+  doc
+) {
+
+  const card =
+    document.createElement(
+      'article'
+    );
+
+  card.className =
+    'document-card';
+
+
+  /***********************************************
+   * IMAGE
+   ***********************************************/
+
+  const imageArea =
+    document.createElement(
+      'div'
+    );
+
+  imageArea.className =
+    'card-image';
+
+
+  if (doc.gambarUtama) {
+
+    const img =
+      document.createElement(
+        'img'
+      );
+
+    img.src =
+      convertDriveImageUrl(
+        doc.gambarUtama
+      );
+
+    img.alt =
+      doc.nama;
+
+    img.loading =
+      'lazy';
+
+    img.onclick =
+      function() {
+
+        openLightbox(
+          img.src
+        );
+
+      };
+
+    img.onerror =
+      function() {
+
+        imageArea.innerHTML =
+          '<div class="card-image-placeholder">📄</div>';
+
+      };
+
+    imageArea.appendChild(
+      img
+    );
+
+  } else {
+
+    imageArea.innerHTML =
+      '<div class="card-image-placeholder">📄</div>';
+
+  }
+
+
+  /***********************************************
+   * BODY
+   ***********************************************/
+
+  const body =
+    document.createElement(
+      'div'
+    );
+
+  body.className =
+    'card-body';
+
+
+  const name =
+    document.createElement(
+      'h3'
+    );
+
+  name.className =
+    'card-name';
+
+  name.textContent =
+    doc.nama;
+
+
+  const description =
+    document.createElement(
+      'p'
+    );
+
+  description.className =
+    'card-description';
+
+  description.textContent =
+    doc.deskripsi ||
+    'Tidak ada deskripsi.';
+
+
+  const date =
+    document.createElement(
+      'div'
+    );
+
+  date.className =
+    'card-date';
+
+  date.textContent =
+    doc.tanggal
+      ? 'Dibuat: ' + doc.tanggal
+      : '';
+
+
+  /***********************************************
+   * GALLERY
+   ***********************************************/
+
+  const gallery =
+    document.createElement(
+      'div'
+    );
+
+  gallery.className =
+    'gallery';
+
+
+  if (
+    Array.isArray(
+      doc.gambarTambahan
+    )
+  ) {
+
+    doc.gambarTambahan.forEach(
+      function(item) {
+
+        if (!item || !item.url) {
+          return;
+        }
+
+        const thumb =
+          document.createElement(
+            'img'
+          );
+
+        thumb.src =
+          convertDriveImageUrl(
+            item.url
+          );
+
+        thumb.alt =
+          item.name || '';
+
+        thumb.loading =
+          'lazy';
+
+        thumb.onclick =
+          function() {
+
+            openLightbox(
+              thumb.src
+            );
+
+          };
+
+        gallery.appendChild(
+          thumb
+        );
+
+      }
+    );
+
+  }
+
+
+  /***********************************************
+   * ACTIONS
+   ***********************************************/
+
+  const actions =
+    document.createElement(
+      'div'
+    );
+
+  actions.className =
+    'card-actions';
+
+
+  if (doc.pdfUrl) {
+
+    const openPdfBtn =
+      document.createElement(
+        'button'
+      );
+
+    openPdfBtn.className =
+      'btn pdf';
+
+    openPdfBtn.textContent =
+      'Buka PDF';
+
+    openPdfBtn.onclick =
+      function() {
+
+        openPdf(
+          doc.pdfUrl
+        );
+
+      };
+
+    actions.appendChild(
+      openPdfBtn
+    );
+
+
+    const downloadBtn =
+      document.createElement(
+        'button'
+      );
+
+    downloadBtn.className =
+      'btn download';
+
+    downloadBtn.textContent =
+      'Download PDF';
+
+    downloadBtn.onclick =
+      function() {
+
+        downloadPDF(
+          doc.pdfUrl,
+          doc.nama
+        );
+
+      };
+
+    actions.appendChild(
+      downloadBtn
+    );
+
+  }
+
+
+  const editBtn =
+    document.createElement(
+      'button'
+    );
+
+  editBtn.className =
+    'btn edit';
+
+  editBtn.textContent =
+    'Edit';
+
+  editBtn.onclick =
+    function() {
+
+      openEditModal(
+        doc
+      );
+
+    };
+
+  actions.appendChild(
+    editBtn
+  );
+
+
+  const deleteBtn =
+    document.createElement(
+      'button'
+    );
+
+  deleteBtn.className =
+    'btn danger';
+
+  deleteBtn.textContent =
+    'Hapus';
+
+  deleteBtn.onclick =
+    function() {
+
+      deleteDocumentConfirm(
+        doc
+      );
+
+    };
+
+  actions.appendChild(
+    deleteBtn
+  );
+
+
+  body.appendChild(
+    name
+  );
+
+  body.appendChild(
+    description
+  );
+
+  body.appendChild(
+    date
+  );
+
+  if (
+    gallery.children.length
+  ) {
+
+    body.appendChild(
+      gallery
+    );
+
+  }
+
+  body.appendChild(
+    actions
+  );
+
+
+  card.appendChild(
+    imageArea
+  );
+
+  card.appendChild(
+    body
+  );
+
+
+  return card;
+
+}
+
+
+/*************************************************
+ * DRIVE IMAGE URL
+ *************************************************/
+
+function convertDriveImageUrl(
+  url
+) {
+
+  if (!url) {
+    return '';
+  }
+
+  const match =
+    String(url).match(
+      /[-\w]{25,}/
+    );
+
+  if (!match) {
+    return url;
+  }
+
+  return (
+    'https://drive.google.com/thumbnail' +
+    '?id=' +
+    encodeURIComponent(match[0]) +
+    '&sz=w1200'
+  );
+
+}
+
+
+/*************************************************
+ * OPEN PDF
+ *************************************************/
+
+function openPdf(url) {
+
+  if (!url) {
+    showToast(
+      'PDF tidak tersedia.',
+      true
+    );
+    return;
+  }
+
+  window.open(
+    url,
+    '_blank'
+  );
+
+}
+
+
+/*************************************************
+ * DOWNLOAD PDF
+ *************************************************/
+
+function downloadPDF(
+  url,
+  name
+) {
+
+  if (!url) {
+    showToast(
+      'PDF tidak tersedia.',
+      true
+    );
+    return;
+  }
+
+  const match =
+    String(url).match(
+      /[-\w]{25,}/
+    );
+
+  if (!match) {
+
+    window.open(
+      url,
+      '_blank'
+    );
+
+    return;
+  }
+
+
+  const fileId =
+    match[0];
+
+
+  const downloadUrl =
+    'https://drive.google.com/uc' +
+    '?export=download&id=' +
+    encodeURIComponent(fileId);
+
+
+  const link =
+    document.createElement(
+      'a'
+    );
+
+  link.href =
+    downloadUrl;
+
+  link.target =
+    '_blank';
+
+  link.rel =
+    'noopener';
+
+  link.download =
+    sanitizeDownloadName(
+      name
+    ) + '.pdf';
+
+
+  document.body.appendChild(
+    link
+  );
+
+  link.click();
+
+  link.remove();
+
+}
+
+
+/*************************************************
+ * CREATE MODAL
+ *************************************************/
+
+function openCreateModal() {
+
+  editMode = false;
+
+  editId = null;
+
+
+  document
+    .getElementById(
+      'modalTitle'
+    )
+    .textContent =
+    'Tambah Dokumen';
+
+
+  document
+    .getElementById(
+      'documentForm'
+    )
+    .reset();
+
+
+  document
+    .getElementById(
+      'currentPdf'
+    )
+    .innerHTML = '';
+
+
+  document
+    .getElementById(
+      'currentMainImage'
+    )
+    .innerHTML = '';
+
+
+  document
+    .getElementById(
+      'replaceGalleryBox'
+    )
+    .classList.add(
+      'hidden'
+    );
+
+
+  showModal();
+
+}
+
+
+/*************************************************
+ * EDIT MODAL
+ *************************************************/
+
+function openEditModal(
+  doc
+) {
+
+  editMode = true;
+
+  editId =
+    doc.id;
+
+
+  document
+    .getElementById(
+      'modalTitle'
+    )
+    .textContent =
+    'Edit Dokumen';
+
+
+  document
+    .getElementById(
+      'nama'
+    )
+    .value =
+    doc.nama || '';
+
+
+  document
+    .getElementById(
+      'deskripsi'
+    )
+    .value =
+    doc.deskripsi || '';
+
+
+  document
+    .getElementById(
+      'pdfFile'
+    )
+    .value = '';
+
+
+  document
+    .getElementById(
+      'mainImage'
+    )
+    .value = '';
+
+
+  document
+    .getElementById(
+      'extraImages'
+    )
+    .value = '';
+
+
+  document
+    .getElementById(
+      'replaceExtraImages'
+    )
+    .checked =
+    false;
+
+
+  /***********************************************
+   * CURRENT PDF
+   ***********************************************/
+
+  const currentPdf =
+    document.getElementById(
+      'currentPdf'
+    );
+
+  if (doc.pdfUrl) {
+
+    currentPdf.innerHTML =
+      '<a href="' +
+      escapeAttribute(
+        doc.pdfUrl
+      ) +
+      '" target="_blank">' +
+      'PDF saat ini' +
+      '</a>';
+
+  } else {
+
+    currentPdf.innerHTML =
+      'Belum ada PDF.';
+
+  }
+
+
+  /***********************************************
+   * CURRENT IMAGE
+   ***********************************************/
+
+  const currentImage =
+    document.getElementById(
+      'currentMainImage'
+    );
+
+  if (doc.gambarUtama) {
+
+    currentImage.innerHTML =
+      '<img src="' +
+      escapeAttribute(
+        convertDriveImageUrl(
+          doc.gambarUtama
+        )
+      ) +
+      '" alt="Preview">';
+
+  } else {
+
+    currentImage.innerHTML =
+      'Belum ada gambar utama.';
+
+  }
+
+
+  document
+    .getElementById(
+      'replaceGalleryBox'
+    )
+    .classList.remove(
+      'hidden'
+    );
+
+
+  showModal();
+
+}
+
+
+/*************************************************
+ * SHOW MODAL
+ *************************************************/
+
+function showModal() {
+
+  document
+    .getElementById(
+      'documentModal'
+    )
+    .classList.add(
+      'show'
+    );
+
+}
+
+
+/*************************************************
+ * CLOSE MODAL
+ *************************************************/
+
+function closeModal() {
+
+  document
+    .getElementById(
+      'documentModal'
+    )
+    .classList.remove(
+      'show'
+    );
+
+}
+
+
+/*************************************************
+ * SUBMIT FORM
+ *************************************************/
+
+async function submitForm(
+  event
+) {
+
+  event.preventDefault();
+
+
+  const nama =
+    document
+      .getElementById(
+        'nama'
+      )
+      .value
+      .trim();
+
+
+  const deskripsi =
+    document
+      .getElementById(
+        'deskripsi'
+      )
+      .value
+      .trim();
+
+
+  if (!nama) {
+
+    showToast(
+      'Nama dokumen wajib diisi.',
+      true
+    );
+
+    return;
+
+  }
+
+
+  try {
+
+    showLoading(
+      editMode
+        ? 'Memperbarui dokumen...'
+        : 'Menyimpan dokumen...'
+    );
+
+
+    const pdfInput =
+      document.getElementById(
+        'pdfFile'
+      );
+
+
+    const mainInput =
+      document.getElementById(
+        'mainImage'
+      );
+
+
+    const extraInput =
+      document.getElementById(
+        'extraImages'
+      );
+
+
+    let pdf = null;
+
+    let gambarUtama = null;
+
+    let gambarTambahan = [];
+
+
+    /***********************************************
+     * PDF
+     ***********************************************/
+
+    if (
+      pdfInput.files &&
+      pdfInput.files[0]
+    ) {
+
+      pdf =
+        await fileToObject(
+          pdfInput.files[0]
+        );
+
+    }
+
+
+    /***********************************************
+     * MAIN IMAGE
+     ***********************************************/
+
+    if (
+      mainInput.files &&
+      mainInput.files[0]
+    ) {
+
+      gambarUtama =
+        await fileToObject(
+          mainInput.files[0]
+        );
+
+    }
+
+
+    /***********************************************
+     * EXTRA IMAGES
+     ***********************************************/
+
+    if (
+      extraInput.files &&
+      extraInput.files.length
+    ) {
+
+      for (
+        const file
+        of extraInput.files
+      ) {
+
+        const converted =
+          await fileToObject(
+            file
+          );
+
+        gambarTambahan.push(
+          converted
+        );
+
+      }
+
+    }
+
+
+    const payload = {
+
+      id:
+        editMode
+          ? editId
+          : null,
+
+      nama:
+        nama,
+
+      deskripsi:
+        deskripsi,
+
+      pdf:
+        pdf,
+
+      gambarUtama:
+        gambarUtama,
+
+      gambarTambahan:
+        gambarTambahan,
+
+      replaceExtraImages:
+        editMode
+          ? document
+              .getElementById(
+                'replaceExtraImages'
+              )
+              .checked
+          : false
+
+    };
+
+
+    /***********************************************
+     * CREATE
+     ***********************************************/
+
+    if (!editMode) {
+
+      google.script.run
+        .withSuccessHandler(
+          function(result) {
+
+            hideLoading();
+
+            closeModal();
+
+            showToast(
+              result.message ||
+              'Dokumen berhasil ditambahkan.'
+            );
+
+            loadDocuments();
+
+          }
+        )
+        .withFailureHandler(
+          function(error) {
+
+            hideLoading();
+
+            showToast(
+              getErrorMessage(error),
+              true
+            );
+
+          }
+        )
+        .createDocument(
+          payload
+        );
+
+      return;
+    }
+
+
+    /***********************************************
+     * UPDATE
+     ***********************************************/
+
+    google.script.run
+      .withSuccessHandler(
+        function(result) {
+
+          hideLoading();
+
+          closeModal();
+
+          showToast(
+            result.message ||
+            'Dokumen berhasil diperbarui.'
+          );
+
+          loadDocuments();
+
+        }
+      )
+      .withFailureHandler(
+        function(error) {
+
+          hideLoading();
+
+          showToast(
+            getErrorMessage(error),
+            true
+          );
+
+        }
+      )
+      .updateDocument(
+        payload
+      );
+
+
+  } catch (error) {
+
+    hideLoading();
+
+    showToast(
+      error.message ||
+      String(error),
+      true
+    );
+
+  }
+
+}
+
+
+/*************************************************
+ * FILE TO OBJECT
+ *************************************************/
+
+function fileToObject(
+  file
+) {
+
+  return new Promise(
+    function(resolve, reject) {
+
+      const reader =
+        new FileReader();
+
+
+      reader.onload =
+        function(event) {
+
+          const result =
+            event.target.result;
+
+
+          const commaIndex =
+            result.indexOf(',');
+
+
+          const base64 =
+            result.substring(
+              commaIndex + 1
+            );
+
+
+          resolve({
+
+            name:
+              file.name,
+
+            mimeType:
+              file.type,
+
+            size:
+              file.size,
+
+            base64:
+              base64
+
+          });
+
+        };
+
+
+      reader.onerror =
+        function() {
+
+          reject(
+            new Error(
+              'Gagal membaca file: ' +
+              file.name
+            )
+          );
+
+        };
+
+
+      reader.readAsDataURL(
+        file
+      );
+
+    }
+  );
+
+}
+
+
+/*************************************************
+ * DELETE
+ *************************************************/
+
+function deleteDocumentConfirm(
+  doc
+) {
+
+  const confirmed =
+    confirm(
+      'Hapus dokumen "' +
+      doc.nama +
+      '"?\n\n' +
+      'Folder Google Drive dan seluruh file di dalamnya juga akan dipindahkan ke Trash.'
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  showLoading(
+    'Menghapus dokumen...'
+  );
+
+
+  google.script.run
+    .withSuccessHandler(
+      function(result) {
+
+        hideLoading();
+
+        showToast(
+          result.message ||
+          'Dokumen berhasil dihapus.'
+        );
+
+        loadDocuments();
+
+      }
+    )
+    .withFailureHandler(
+      function(error) {
+
+        hideLoading();
+
+        showToast(
+          getErrorMessage(error),
+          true
+        );
+
+      }
+    )
+    .deleteDocument(
+      doc.id
+    );
+
+}
+
+
+/*************************************************
+ * LIGHTBOX
+ *************************************************/
+
+function openLightbox(
+  imageUrl
+) {
+
+  document
+    .getElementById(
+      'lightboxImage'
+    )
+    .src =
+    imageUrl;
+
+
+  document
+    .getElementById(
+      'lightbox'
+    )
+    .classList.add(
+      'show'
+    );
+
+}
+
+
+function closeLightbox() {
+
+  document
+    .getElementById(
+      'lightbox'
+    )
+    .classList.remove(
+      'show'
+    );
+
+}
+
+
+/*************************************************
+ * TOAST
+ *************************************************/
+
+function showToast(
+  message,
+  error
+) {
+
+  const toast =
+    document.getElementById(
+      'toast'
+    );
+
+
+  clearTimeout(
+    toastTimer
+  );
+
+
+  toast.textContent =
+    message;
+
+
+  toast.classList.toggle(
+    'error',
+    !!error
+  );
+
+
+  toast.classList.add(
+    'show'
+  );
+
+
+  toastTimer =
+    setTimeout(
+      function() {
+
+        toast.classList.remove(
+          'show'
+        );
+
+      },
+      3500
+    );
+
+}
+
+
+/*************************************************
+ * LOADING
+ *************************************************/
+
+function showLoading(
+  text
+) {
+
+  document
+    .getElementById(
+      'loadingText'
+    )
+    .textContent =
+    text ||
+    'Memproses...';
+
+
+  document
+    .getElementById(
+      'loadingOverlay'
+    )
+    .classList.add(
+      'show'
+    );
+
+}
+
+
+function hideLoading() {
+
+  document
+    .getElementById(
+      'loadingOverlay'
+    )
+    .classList.remove(
+      'show'
+    );
+
+}
+
+
+/*************************************************
+ * ERROR
+ *************************************************/
+
+function getErrorMessage(
+  error
+) {
+
+  if (!error) {
+    return 'Terjadi kesalahan.';
+  }
+
+
+  if (
+    typeof error ===
+    'string'
+  ) {
+
+    return error;
+
+  }
+
+
+  return (
+    error.message ||
+    'Terjadi kesalahan pada server.'
+  );
+
+}
+
+
+/*************************************************
+ * SANITIZE DOWNLOAD NAME
+ *************************************************/
+
+function sanitizeDownloadName(
+  name
+) {
+
+  return String(
+    name || 'dokumen'
+  )
+    .replace(
+      /[\\/:*?"<>|]/g,
+      '_'
+    );
+
+}
+
+
+/*************************************************
+ * ESCAPE ATTRIBUTE
+ *************************************************/
+
+function escapeAttribute(
+  value
+) {
+
+  return String(
+    value || ''
+  )
+    .replace(
+      /&/g,
+      '&amp;'
+    )
+    .replace(
+      /"/g,
+      '&quot;'
+    )
+    .replace(
+      /</g,
+      '&lt;'
+    )
+    .replace(
+      />/g,
+      '&gt;'
+    );
+
+}
+
+
+/*************************************************
+ * KEYBOARD
+ *************************************************/
+
+document.addEventListener(
+  'keydown',
+  function(event) {
+
+    if (
+      event.key ===
+      'Escape'
+    ) {
+
+      closeModal();
+
+      closeLightbox();
+
+    }
+
+  }
+);
+
+
+/*************************************************
+ * CLICK OUTSIDE MODAL
+ *************************************************/
+
+document
+  .getElementById(
+    'documentModal'
+  )
+  .addEventListener(
+    'click',
+    function(event) {
+
+      if (
+        event.target ===
+        this
+      ) {
+
+        closeModal();
+
+      }
+
+    }
+  );
+
+
+</script>
+
+</body>
 </html>
