@@ -1,89 +1,170 @@
+/* =====================================================
+   CONFIGURATION
+===================================================== */
+
+/*
+ * MASUKKAN URL WEB APP GOOGLE APPS SCRIPT DI SINI.
+ *
+ * Contoh:
+ *
+ * const API_URL =
+ *   "https://script.google.com/macros/s/XXXXXXXX/exec";
+ */
+
+const API_URL =
+  "https://script.google.com/macros/s/AKfycbxh6lNFvwxBVzFw4BmBSM_yzqX8mPJ58YCClklSXDnP_b3PsVxqmySgNokAmU7fkKnCIw/exec";
+
+/* =====================================================
+   GLOBAL
+===================================================== */
+
 let documents = [];
+
 let editMode = false;
+
 let toastTimer = null;
 
-/* =========================
-   LOAD DATA
-========================= */
+/* =====================================================
+   DOM READY
+===================================================== */
 
 document.addEventListener("DOMContentLoaded", function () {
-  loadDocuments();
-
   const form = document.getElementById("documentForm");
 
   if (form) {
     form.addEventListener("submit", submitForm);
   }
+
+  const searchInput = document.getElementById("searchInput");
+
+  if (searchInput) {
+    searchInput.addEventListener("input", renderDocuments);
+  }
+
+  loadDocuments();
 });
 
-function loadDocuments() {
-  showLoading("Memuat data...");
+/* =====================================================
+   API REQUEST
+===================================================== */
 
-  google.script.run
+async function apiRequest(action, payload = null, id = null) {
+  if (!API_URL || API_URL.includes("MASUKKAN_URL")) {
+    throw new Error("API_URL belum diisi di script.js.");
+  }
 
-    .withSuccessHandler(function (result) {
-      hideLoading();
+  const body = {
+    action: action,
+  };
 
-      documents = Array.isArray(result) ? result : [];
+  if (payload !== null) {
+    body.payload = payload;
+  }
 
-      renderDocuments();
-    })
+  if (id !== null) {
+    body.id = id;
+  }
 
-    .withFailureHandler(function (error) {
-      hideLoading();
+  const response = await fetch(API_URL, {
+    method: "POST",
 
-      showToast(getErrorMessage(error), "error");
-    })
+    headers: {
+      "Content-Type": "text/plain;charset=utf-8",
+    },
 
-    .getDocuments();
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    throw new Error("HTTP Error " + response.status);
+  }
+
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(result.message || "Terjadi kesalahan pada server.");
+  }
+
+  return result.data;
 }
 
-/* =========================
-   RENDER
-========================= */
+/* =====================================================
+   LOAD DOCUMENTS
+===================================================== */
+
+async function loadDocuments() {
+  try {
+    showLoading("Memuat data...");
+
+    documents = await apiRequest("getDocuments");
+
+    if (!Array.isArray(documents)) {
+      documents = [];
+    }
+
+    renderDocuments();
+  } catch (error) {
+    console.error(error);
+
+    showToast(getErrorMessage(error), "error");
+  } finally {
+    hideLoading();
+  }
+}
+
+/* =====================================================
+   RENDER DOCUMENTS
+===================================================== */
 
 function renderDocuments() {
   const grid = document.getElementById("documentGrid");
 
-  const empty = document.getElementById("emptyState");
+  const emptyState = document.getElementById("emptyState");
 
-  const total = document.getElementById("totalDocuments");
+  const totalElement = document.getElementById("totalDocuments");
 
-  const search = document.getElementById("searchInput");
+  const searchInput = document.getElementById("searchInput");
 
-  const keyword = search ? search.value.trim().toLowerCase() : "";
+  if (!grid) {
+    return;
+  }
+
+  const keyword = searchInput ? searchInput.value.trim().toLowerCase() : "";
 
   const filtered = documents.filter(function (doc) {
-    return (
-      String(doc.nama || "")
-        .toLowerCase()
-        .includes(keyword) ||
-      String(doc.deskripsi || "")
-        .toLowerCase()
-        .includes(keyword)
-    );
+    const name = String(doc.nama || "").toLowerCase();
+
+    const description = String(doc.deskripsi || "").toLowerCase();
+
+    return name.includes(keyword) || description.includes(keyword);
   });
 
-  total.textContent = filtered.length;
+  if (totalElement) {
+    totalElement.textContent = filtered.length;
+  }
 
   grid.innerHTML = "";
 
   if (filtered.length === 0) {
-    empty.style.display = "block";
+    if (emptyState) {
+      emptyState.style.display = "block";
+    }
 
     return;
   }
 
-  empty.style.display = "none";
+  if (emptyState) {
+    emptyState.style.display = "none";
+  }
 
   filtered.forEach(function (doc) {
     grid.appendChild(createDocumentCard(doc));
   });
 }
 
-/* =========================
-   CARD
-========================= */
+/* =====================================================
+   CREATE CARD
+===================================================== */
 
 function createDocumentCard(doc) {
   const card = document.createElement("article");
@@ -97,57 +178,100 @@ function createDocumentCard(doc) {
   if (Array.isArray(doc.gambarTambahan)) {
     galleryHTML = doc.gambarTambahan
       .map(function (url) {
-        const img = convertDriveImageUrl(url);
+        const image = convertDriveImageUrl(url);
+
+        if (!image) {
+          return "";
+        }
 
         return `
-            <img
-              src="${escapeAttribute(img)}"
-              alt="Gambar tambahan"
-              onclick="openLightbox('${escapeAttribute(img)}')"
-              onerror="this.style.display='none'"
-            >
-          `;
+
+              <img
+                src="${escapeAttribute(image)}"
+                alt="Gambar tambahan"
+                onclick="openLightbox('${escapeJS(image)}')"
+                onerror="this.style.display='none'"
+              >
+
+            `;
       })
       .join("");
   }
 
+  const name = escapeHTML(doc.nama || "");
+
+  const description = escapeHTML(doc.deskripsi || "-");
+
+  const id = escapeJS(String(doc.id || ""));
+
+  let imageHTML;
+
+  if (imageUrl) {
+    imageHTML = `
+
+      <img
+        class="card-image"
+        src="${escapeAttribute(imageUrl)}"
+        alt="${name}"
+        onclick="openLightbox('${escapeJS(imageUrl)}')"
+        onerror="handleImageError(this)"
+      >
+
+    `;
+  } else {
+    imageHTML = `
+
+      <div class="card-image-placeholder">
+        🖼️
+      </div>
+
+    `;
+  }
+
+  let pdfButtons = "";
+
+  if (doc.pdfUrl) {
+    const pdf = escapeJS(doc.pdfUrl);
+
+    const safeName = escapeJS(doc.nama || "Dokumen");
+
+    pdfButtons = `
+
+      <button
+        type="button"
+        class="btn pdf"
+        onclick="openPdf('${pdf}')"
+      >
+        📄 Buka PDF
+      </button>
+
+
+      <button
+        type="button"
+        class="btn download"
+        onclick="downloadPDF('${pdf}','${safeName}')"
+      >
+        ⬇ Download
+      </button>
+
+    `;
+  }
+
   card.innerHTML = `
 
-    ${
-      imageUrl
-        ? `
-          <img
-            class="card-image"
-            src="${escapeAttribute(imageUrl)}"
-            alt="${escapeAttribute(doc.nama)}"
-            onclick="openLightbox('${escapeAttribute(imageUrl)}')"
-            onerror="this.src='';this.alt='Gambar gagal dimuat'"
-          >
-        `
-        : `
-          <div class="card-image"
-               style="
-                 display:flex;
-                 align-items:center;
-                 justify-content:center;
-                 background:#f3f4f6;
-                 color:#9ca3af;
-               ">
-            Tidak ada gambar
-          </div>
-        `
-    }
+    ${imageHTML}
 
 
     <div class="card-body">
 
+
       <h3 class="card-name">
-        ${escapeHTML(doc.nama || "")}
+        ${name}
       </h3>
 
 
       <p class="card-description">
-        ${escapeHTML(doc.deskripsi || "-")}
+        ${description}
       </p>
 
 
@@ -164,53 +288,28 @@ function createDocumentCard(doc) {
 
       <div class="card-actions">
 
-        ${
-          doc.pdfUrl
-            ? `
-              <button
-                class="btn pdf"
-                onclick="openPdf('${escapeAttribute(doc.pdfUrl)}')"
-              >
-                📄 Buka PDF
-              </button>
-            `
-            : ""
-        }
-
-
-        ${
-          doc.pdfUrl
-            ? `
-              <button
-                class="btn download"
-                onclick="downloadPDF(
-                  '${escapeAttribute(doc.pdfUrl)}',
-                  '${escapeAttribute(doc.nama)}'
-                )"
-              >
-                ⬇ Download
-              </button>
-            `
-            : ""
-        }
+        ${pdfButtons}
 
 
         <button
+          type="button"
           class="btn edit"
-          onclick="openEditModal('${escapeAttribute(doc.id)}')"
+          onclick="openEditModal('${id}')"
         >
           ✏ Edit
         </button>
 
 
         <button
+          type="button"
           class="btn danger"
-          onclick="deleteDocumentConfirm('${escapeAttribute(doc.id)}')"
+          onclick="deleteDocumentConfirm('${id}')"
         >
           🗑 Hapus
         </button>
 
       </div>
+
 
     </div>
 
@@ -219,16 +318,23 @@ function createDocumentCard(doc) {
   return card;
 }
 
-/* =========================
-   DRIVE IMAGE
-========================= */
+/* =====================================================
+   DRIVE IMAGE URL
+===================================================== */
 
 function convertDriveImageUrl(url) {
   if (!url) {
     return "";
   }
 
-  const match = String(url).match(/\/d\/([^/]+)/);
+  const value = String(url);
+
+  /*
+   * Format:
+   * https://drive.google.com/file/d/FILE_ID/view
+   */
+
+  const match = value.match(/\/d\/([^/]+)/);
 
   if (match) {
     return (
@@ -238,12 +344,45 @@ function convertDriveImageUrl(url) {
     );
   }
 
-  return url;
+  /*
+   * Jika sudah URL gambar biasa.
+   */
+
+  return value;
 }
 
-/* =========================
-   PDF
-========================= */
+/* =====================================================
+   IMAGE ERROR
+===================================================== */
+
+function handleImageError(image) {
+  image.style.display = "none";
+
+  const parent = image.parentElement;
+
+  if (parent && !parent.querySelector(".image-error")) {
+    const error = document.createElement("div");
+
+    error.className = "image-error";
+
+    error.textContent = "Gambar gagal dimuat";
+
+    error.style.cssText = `
+      height:230px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:#f3f4f6;
+      color:#9ca3af;
+    `;
+
+    parent.insertBefore(error, image);
+  }
+}
+
+/* =====================================================
+   OPEN PDF
+===================================================== */
 
 function openPdf(url) {
   if (!url) {
@@ -252,8 +391,12 @@ function openPdf(url) {
     return;
   }
 
-  window.open(url, "_blank");
+  window.open(url, "_blank", "noopener");
 }
+
+/* =====================================================
+   DOWNLOAD PDF
+===================================================== */
 
 function downloadPDF(url, name) {
   if (!url) {
@@ -295,33 +438,41 @@ function downloadPDF(url, name) {
   showToast("Download PDF dimulai.", "success");
 }
 
-function sanitizeDownloadName(name) {
-  return String(name || "dokumen")
-    .replace(/[\\/:*?"<>|]/g, "")
-    .trim();
-}
-
-/* =========================
-   CREATE
-========================= */
+/* =====================================================
+   CREATE MODAL
+===================================================== */
 
 function openCreateModal() {
   editMode = false;
 
-  document.getElementById("modalTitle").textContent = "Tambah Dokumen";
+  const title = document.getElementById("modalTitle");
 
-  document.getElementById("documentForm").reset();
+  if (title) {
+    title.textContent = "Tambah Dokumen";
+  }
+
+  const form = document.getElementById("documentForm");
+
+  if (form) {
+    form.reset();
+  }
 
   document.getElementById("documentId").value = "";
 
   document.getElementById("replaceExtraContainer").style.display = "none";
 
+  document.getElementById("pdfRequired").style.display = "inline";
+
+  document.getElementById("mainImageRequired").style.display = "inline";
+
+  document.getElementById("submitButton").textContent = "Simpan";
+
   showModal();
 }
 
-/* =========================
-   EDIT
-========================= */
+/* =====================================================
+   EDIT MODAL
+===================================================== */
 
 function openEditModal(id) {
   const doc = documents.find(function (item) {
@@ -354,24 +505,39 @@ function openEditModal(id) {
 
   document.getElementById("replaceExtraImages").checked = false;
 
+  /*
+   * Saat edit,
+   * file tidak wajib.
+   */
+
+  document.getElementById("pdfRequired").style.display = "none";
+
+  document.getElementById("mainImageRequired").style.display = "none";
+
+  document.getElementById("submitButton").textContent = "Simpan Perubahan";
+
   showModal();
 }
 
-/* =========================
-   MODAL
-========================= */
+/* =====================================================
+   SHOW MODAL
+===================================================== */
 
 function showModal() {
   document.getElementById("modal").classList.add("show");
 }
 
+/* =====================================================
+   CLOSE MODAL
+===================================================== */
+
 function closeModal() {
   document.getElementById("modal").classList.remove("show");
 }
 
-/* =========================
-   SAVE
-========================= */
+/* =====================================================
+   SUBMIT FORM
+===================================================== */
 
 async function submitForm(event) {
   event.preventDefault();
@@ -387,21 +553,69 @@ async function submitForm(event) {
   }
 
   try {
-    showLoading(editMode ? "Menyimpan perubahan..." : "Membuat dokumen...");
+    showLoading(editMode ? "Menyimpan perubahan..." : "Mengupload dokumen...");
 
-    const pdf = await fileToObject(document.getElementById("pdfFile").files[0]);
+    /*
+     * PDF
+     */
 
-    const mainImage = await fileToObject(
-      document.getElementById("mainImageFile").files[0],
-    );
+    const pdfFile = document.getElementById("pdfFile").files[0];
+
+    /*
+     * Gambar utama
+     */
+
+    const mainImageFile = document.getElementById("mainImageFile").files[0];
+
+    /*
+     * Gambar tambahan
+     */
 
     const extraFiles = document.getElementById("extraImageFiles").files;
+
+    /*
+     * Validasi CREATE
+     */
+
+    if (!editMode) {
+      if (!pdfFile) {
+        throw new Error("File PDF wajib dipilih.");
+      }
+
+      if (!mainImageFile) {
+        throw new Error("Gambar utama wajib dipilih.");
+      }
+    }
+
+    /*
+     * Convert PDF
+     */
+
+    const pdf = await fileToObject(pdfFile);
+
+    /*
+     * Convert gambar utama
+     */
+
+    const mainImage = await fileToObject(mainImageFile);
+
+    /*
+     * Convert gambar tambahan
+     */
 
     const extraImages = [];
 
     for (let i = 0; i < extraFiles.length; i++) {
-      extraImages.push(await fileToObject(extraFiles[i]));
+      const file = extraFiles[i];
+
+      const converted = await fileToObject(file);
+
+      extraImages.push(converted);
     }
+
+    /*
+     * Payload
+     */
 
     const payload = {
       id: document.getElementById("documentId").value,
@@ -419,33 +633,41 @@ async function submitForm(event) {
       replaceExtraImages: document.getElementById("replaceExtraImages").checked,
     };
 
-    if (editMode) {
-      google.script.run
+    let result;
 
-        .withSuccessHandler(handleSaveSuccess)
+    /*
+     * CREATE
+     */
 
-        .withFailureHandler(handleSaveError)
-
-        .updateDocument(payload);
+    if (!editMode) {
+      result = await apiRequest("createDocument", payload);
     } else {
-      google.script.run
-
-        .withSuccessHandler(handleSaveSuccess)
-
-        .withFailureHandler(handleSaveError)
-
-        .createDocument(payload);
+      /*
+       * UPDATE
+       */
+      result = await apiRequest("updateDocument", payload);
     }
-  } catch (error) {
-    hideLoading();
 
-    showToast(error.message || "Gagal membaca file.", "error");
+    closeModal();
+
+    showToast(
+      result && result.message ? result.message : "Data berhasil disimpan.",
+      "success",
+    );
+
+    await loadDocuments();
+  } catch (error) {
+    console.error(error);
+
+    showToast(getErrorMessage(error), "error");
+  } finally {
+    hideLoading();
   }
 }
 
-/* =========================
-   FILE READER
-========================= */
+/* =====================================================
+   FILE TO OBJECT
+===================================================== */
 
 function fileToObject(file) {
   return new Promise(function (resolve, reject) {
@@ -455,10 +677,24 @@ function fileToObject(file) {
       return;
     }
 
+    /*
+     * Maksimal 20 MB
+     */
+
+    if (file.size > 20 * 1024 * 1024) {
+      reject(new Error("Ukuran file maksimal 20 MB: " + file.name));
+
+      return;
+    }
+
     const reader = new FileReader();
 
     reader.onload = function (event) {
-      const base64 = event.target.result.split(",")[1];
+      const result = event.target.result;
+
+      const parts = result.split(",");
+
+      const base64 = parts.length > 1 ? parts[1] : "";
 
       resolve({
         name: file.name,
@@ -472,113 +708,101 @@ function fileToObject(file) {
     };
 
     reader.onerror = function () {
-      reject(new Error("Gagal membaca file."));
+      reject(new Error("Gagal membaca file: " + file.name));
     };
 
     reader.readAsDataURL(file);
   });
 }
 
-/* =========================
-   SAVE SUCCESS
-========================= */
+/* =====================================================
+   DELETE CONFIRM
+===================================================== */
 
-function handleSaveSuccess(result) {
-  hideLoading();
-
-  closeModal();
-
-  showToast(
-    result && result.message ? result.message : "Data berhasil disimpan.",
-    "success",
-  );
-
-  loadDocuments();
-}
-
-/* =========================
-   SAVE ERROR
-========================= */
-
-function handleSaveError(error) {
-  hideLoading();
-
-  showToast(getErrorMessage(error), "error");
-}
-
-/* =========================
-   DELETE
-========================= */
-
-function deleteDocumentConfirm(id) {
+async function deleteDocumentConfirm(id) {
   const doc = documents.find(function (item) {
     return String(item.id) === String(id);
   });
 
   if (!doc) {
+    showToast("Dokumen tidak ditemukan.", "error");
+
     return;
   }
 
-  const confirmed = confirm(
+  const confirmed = window.confirm(
     'Hapus dokumen "' +
       doc.nama +
-      '"?\n\nFolder Google Drive juga akan dipindahkan ke Sampah.',
+      '"?\n\n' +
+      "Data Spreadsheet akan dihapus dan folder dokumen di Google Drive akan dipindahkan ke Sampah.",
   );
 
   if (!confirmed) {
     return;
   }
 
-  showLoading("Menghapus dokumen...");
+  try {
+    showLoading("Menghapus dokumen...");
 
-  google.script.run
+    const result = await apiRequest("deleteDocument", null, id);
 
-    .withSuccessHandler(function (result) {
-      hideLoading();
+    showToast(
+      result && result.message ? result.message : "Dokumen berhasil dihapus.",
+      "success",
+    );
 
-      showToast(
-        result && result.message ? result.message : "Dokumen berhasil dihapus.",
-        "success",
-      );
+    await loadDocuments();
+  } catch (error) {
+    console.error(error);
 
-      loadDocuments();
-    })
-
-    .withFailureHandler(function (error) {
-      hideLoading();
-
-      showToast(getErrorMessage(error), "error");
-    })
-
-    .deleteDocument(id);
+    showToast(getErrorMessage(error), "error");
+  } finally {
+    hideLoading();
+  }
 }
 
-/* =========================
+/* =====================================================
    LIGHTBOX
-========================= */
+===================================================== */
 
 function openLightbox(url) {
   if (!url) {
     return;
   }
 
-  document.getElementById("lightboxImage").src = url;
+  const lightbox = document.getElementById("lightbox");
 
-  document.getElementById("lightbox").classList.add("show");
+  const image = document.getElementById("lightboxImage");
+
+  image.src = url;
+
+  lightbox.classList.add("show");
+
+  document.body.style.overflow = "hidden";
 }
 
 function closeLightbox() {
-  document.getElementById("lightbox").classList.remove("show");
+  const lightbox = document.getElementById("lightbox");
 
-  document.getElementById("lightboxImage").src = "";
+  const image = document.getElementById("lightboxImage");
+
+  lightbox.classList.remove("show");
+
+  image.src = "";
+
+  document.body.style.overflow = "";
 }
 
-/* =========================
+/* =====================================================
    TOAST
-========================= */
+===================================================== */
 
 function showToast(message, type = "success") {
   const toast = document.getElementById("toast");
+
+  if (!toast) {
+    return;
+  }
 
   toast.textContent = message;
 
@@ -592,27 +816,38 @@ function showToast(message, type = "success") {
 
   toastTimer = setTimeout(function () {
     toast.classList.remove("show");
-  }, 3500);
+  }, 4000);
 }
 
-/* =========================
+/* =====================================================
    LOADING
-========================= */
+===================================================== */
 
 function showLoading(message) {
-  document.getElementById("loadingText").textContent =
-    message || "Memproses...";
+  const loading = document.getElementById("loading");
 
-  document.getElementById("loading").classList.add("show");
+  const loadingText = document.getElementById("loadingText");
+
+  if (loadingText) {
+    loadingText.textContent = message || "Memproses...";
+  }
+
+  if (loading) {
+    loading.classList.add("show");
+  }
 }
 
 function hideLoading() {
-  document.getElementById("loading").classList.remove("show");
+  const loading = document.getElementById("loading");
+
+  if (loading) {
+    loading.classList.remove("show");
+  }
 }
 
-/* =========================
-   ERROR
-========================= */
+/* =====================================================
+   ERROR MESSAGE
+===================================================== */
 
 function getErrorMessage(error) {
   if (!error) {
@@ -626,31 +861,73 @@ function getErrorMessage(error) {
   return error.message || "Terjadi kesalahan.";
 }
 
-/* =========================
-   ESCAPE
-========================= */
+/* =====================================================
+   SANITIZE DOWNLOAD NAME
+===================================================== */
+
+function sanitizeDownloadName(name) {
+  return String(name || "dokumen")
+    .replace(/[\\/:*?"<>|]/g, "")
+
+    .trim();
+}
+
+/* =====================================================
+   ESCAPE HTML
+===================================================== */
 
 function escapeHTML(value) {
   return String(value || "")
     .replace(/&/g, "&amp;")
+
     .replace(/</g, "&lt;")
+
     .replace(/>/g, "&gt;")
+
     .replace(/"/g, "&quot;")
+
     .replace(/'/g, "&#039;");
 }
 
+/* =====================================================
+   ESCAPE ATTRIBUTE
+===================================================== */
+
 function escapeAttribute(value) {
   return String(value || "")
-    .replace(/\\/g, "\\\\")
-    .replace(/'/g, "\\'")
+    .replace(/&/g, "&amp;")
+
     .replace(/"/g, "&quot;")
-    .replace(/\n/g, "\\n")
-    .replace(/\r/g, "\\r");
+
+    .replace(/</g, "&lt;")
+
+    .replace(/>/g, "&gt;");
 }
 
-/* =========================
-   KEYBOARD
-========================= */
+/* =====================================================
+   ESCAPE JAVASCRIPT STRING
+===================================================== */
+
+function escapeJS(value) {
+  return String(value || "")
+    .replace(/\\/g, "\\\\")
+
+    .replace(/'/g, "\\'")
+
+    .replace(/"/g, '\\"')
+
+    .replace(/\r/g, "\\r")
+
+    .replace(/\n/g, "\\n")
+
+    .replace(/</g, "\\x3C")
+
+    .replace(/>/g, "\\x3E");
+}
+
+/* =====================================================
+   ESCAPE KEY
+===================================================== */
 
 document.addEventListener("keydown", function (event) {
   if (event.key === "Escape") {
@@ -660,12 +937,24 @@ document.addEventListener("keydown", function (event) {
   }
 });
 
-/* =========================
-   CLOSE MODAL OUTSIDE
-========================= */
+/* =====================================================
+   CLICK OUTSIDE MODAL
+===================================================== */
 
 document.getElementById("modal")?.addEventListener("click", function (event) {
   if (event.target === this) {
     closeModal();
   }
 });
+
+/* =====================================================
+   CLICK OUTSIDE LIGHTBOX
+===================================================== */
+
+document
+  .getElementById("lightbox")
+  ?.addEventListener("click", function (event) {
+    if (event.target === this) {
+      closeLightbox();
+    }
+  });

@@ -2,6 +2,7 @@
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <title>Document Manager</title>
@@ -10,143 +11,206 @@
   </head>
 
   <body>
+    <!-- =========================
+       HEADER
+  ========================== -->
+
     <header class="topbar">
       <div class="header-inner">
-        <div>
+        <div class="brand">
           <h1>Document Manager</h1>
-          <p>Dashboard Dokumen</p>
+
+          <p>Kelola dokumen PDF dan gambar</p>
         </div>
 
-        <button class="btn primary" onclick="openCreateModal()">
+        <button type="button" class="btn primary" onclick="openCreateModal()">
           + Tambah Dokumen
         </button>
       </div>
     </header>
 
+    <!-- =========================
+       MAIN
+  ========================== -->
+
     <main class="container">
+      <!-- TOOLBAR -->
+
       <div class="toolbar">
         <div class="search-box">
           <input
             type="text"
             id="searchInput"
-            placeholder="Cari dokumen..."
-            oninput="renderDocuments()"
+            placeholder="Cari nama atau deskripsi dokumen..."
           />
         </div>
 
         <div class="total-box">
-          Total:
-          <strong id="totalDocuments">0</strong>
+          Total Dokumen:
+
+          <strong id="totalDocuments"> 0 </strong>
         </div>
       </div>
 
+      <!-- DOCUMENT GRID -->
+
       <section id="documentGrid" class="document-grid"></section>
 
-      <div id="emptyState" class="empty-state">
+      <!-- EMPTY -->
+
+      <div id="emptyState" class="empty-state" style="display: none">
         <div class="empty-icon">📄</div>
 
         <h2>Belum ada dokumen</h2>
 
-        <p>Silakan tambahkan dokumen.</p>
+        <p>Klik tombol "Tambah Dokumen" untuk membuat dokumen baru.</p>
       </div>
     </main>
 
-    <!-- MODAL -->
+    <!-- =========================
+       MODAL
+  ========================== -->
 
     <div id="modal" class="modal">
       <div class="modal-box">
+        <!-- MODAL HEADER -->
+
         <div class="modal-header">
           <div>
             <h2 id="modalTitle">Tambah Dokumen</h2>
+
             <p>Lengkapi data dokumen</p>
           </div>
 
-          <button class="close-btn" onclick="closeModal()">×</button>
+          <button type="button" class="close-btn" onclick="closeModal()">
+            ×
+          </button>
         </div>
+
+        <!-- FORM -->
 
         <form id="documentForm">
           <input type="hidden" id="documentId" />
 
+          <!-- NAMA -->
+
           <div class="form-group">
-            <label> Nama Dokumen <span>*</span> </label>
+            <label for="documentName">
+              Nama Dokumen
+
+              <span>*</span>
+            </label>
 
             <input
               type="text"
               id="documentName"
+              placeholder="Contoh: Katalog Produk September"
               required
-              placeholder="Nama dokumen"
             />
+
+            <small> Nama harus unik. </small>
           </div>
 
+          <!-- DESKRIPSI -->
+
           <div class="form-group">
-            <label>Deskripsi</label>
+            <label for="description"> Deskripsi </label>
 
             <textarea
               id="description"
               rows="4"
-              placeholder="Deskripsi dokumen"
+              placeholder="Masukkan deskripsi dokumen..."
             ></textarea>
           </div>
 
-          <div class="form-group">
-            <label>File PDF</label>
+          <!-- PDF -->
 
-            <input type="file" id="pdfFile" accept="application/pdf" />
+          <div class="form-group">
+            <label for="pdfFile">
+              File PDF
+
+              <span id="pdfRequired" class="required-mark"> * </span>
+            </label>
+
+            <input type="file" id="pdfFile" accept="application/pdf,.pdf" />
+
+            <small> Maksimal 20 MB. </small>
           </div>
 
+          <!-- GAMBAR UTAMA -->
+
           <div class="form-group">
-            <label>Gambar Utama</label>
+            <label for="mainImageFile">
+              Gambar Utama
+
+              <span id="mainImageRequired" class="required-mark"> * </span>
+            </label>
 
             <input type="file" id="mainImageFile" accept="image/*" />
+
+            <small> Gambar yang tampil sebagai gambar utama. </small>
           </div>
+
+          <!-- GAMBAR TAMBAHAN -->
 
           <div class="form-group">
-            <label>Gambar Tambahan</label>
+            <label for="extraImageFiles"> Gambar Tambahan </label>
 
             <input type="file" id="extraImageFiles" accept="image/*" multiple />
+
+            <small> Anda dapat memilih beberapa gambar sekaligus. </small>
           </div>
+
+          <!-- REPLACE GALLERY -->
 
           <div
             id="replaceExtraContainer"
             class="checkbox-group"
             style="display: none"
           >
-            <label>
+            <label class="checkbox-label">
               <input type="checkbox" id="replaceExtraImages" />
 
-              Ganti seluruh gambar tambahan
+              <span> Ganti seluruh gambar tambahan </span>
             </label>
           </div>
+
+          <!-- FORM ACTION -->
 
           <div class="form-actions">
             <button type="button" class="btn ghost" onclick="closeModal()">
               Batal
             </button>
 
-            <button type="submit" class="btn primary">Simpan</button>
+            <button type="submit" class="btn primary" id="submitButton">
+              Simpan
+            </button>
           </div>
         </form>
       </div>
     </div>
 
-    <!-- LIGHTBOX -->
+    <!-- =========================
+       LIGHTBOX
+  ========================== -->
 
-    <div id="lightbox" class="lightbox" onclick="closeLightbox()">
-      <button class="lightbox-close" onclick="closeLightbox()">×</button>
+    <div id="lightbox" class="lightbox">
+      <button type="button" class="lightbox-close" onclick="closeLightbox()">
+        ×
+      </button>
 
-      <img
-        id="lightboxImage"
-        src=""
-        alt="Preview"
-        onclick="event.stopPropagation()"
-      />
+      <img id="lightboxImage" src="" alt="Preview" />
     </div>
 
-    <!-- TOAST -->
+    <!-- =========================
+       TOAST
+  ========================== -->
 
     <div id="toast" class="toast"></div>
 
-    <!-- LOADING -->
+    <!-- =========================
+       LOADING
+  ========================== -->
 
     <div id="loading" class="loading-overlay">
       <div class="loading-box">
@@ -155,6 +219,8 @@
         <p id="loadingText">Memproses...</p>
       </div>
     </div>
+
+    <!-- JAVASCRIPT -->
 
     <script src="script.js"></script>
   </body>
